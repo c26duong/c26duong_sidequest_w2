@@ -10,12 +10,12 @@ let blob3 = {
   // Visual properties
   r: 26, // Base radius
   points: 48, // Number of points used to draw the blob
-  wobble: 7, // Edge deformation amount
-  wobbleFreq: 0.9,
+  wobble: 11, // Edge deformation amount
+  wobbleFreq: 1.6,
 
   // Time values for breathing animation
   t: 0,
-  tSpeed: 0.01,
+  tSpeed: 0.02,
 
   // Physics: velocity
   vx: 0, // Horizontal velocity
@@ -23,8 +23,8 @@ let blob3 = {
 
   // Movement tuning
   accel: 0.55, // Horizontal acceleration
-  maxRun: 4.0, // Maximum horizontal speed
-  gravity: 0.65, // Downward force
+  maxRun: 3.0, // Maximum horizontal speed new fo emotion
+  gravity: 0.85, // Downward force new for emotion
   jumpV: -11.0, // Initial jump impulse
 
   // State
@@ -53,7 +53,7 @@ function setup() {
   platforms = [
     { x: 0, y: floorY3, w: width, h: height - floorY3 }, // floor
     { x: 120, y: floorY3 - 70, w: 120, h: 12 }, // low step
-    { x: 300, y: floorY3 - 120, w: 90, h: 12 }, // mid step
+    { x: 300, y: floorY3 - 120, w: 90, h: 12, type: "slippery" }, // slippery step
     { x: 440, y: floorY3 - 180, w: 130, h: 12 }, // high step
     { x: 520, y: floorY3 - 70, w: 90, h: 12 }, // return ramp
     { x: 220, y: floorY3 - 150, w: 80, h: 12 }, // New Platfrom added
@@ -76,7 +76,8 @@ function draw() {
   let move = 0;
   if (keyIsDown(65) || keyIsDown(LEFT_ARROW)) move -= 1; // A or ←
   if (keyIsDown(68) || keyIsDown(RIGHT_ARROW)) move += 1; // D or →
-  blob3.vx += blob3.accel * move;
+  let frustrationNoise = map(noise(frameCount * 0.05), 0, 1, 0.7, 1.3); //emotion addition
+  blob3.vx += blob3.accel * move * frustrationNoise;
 
   // --- Apply friction and clamp speed ---
   blob3.vx *= blob3.onGround ? blob3.frictionGround : blob3.frictionAir;
@@ -113,6 +114,7 @@ function draw() {
   // --- STEP 2: Move vertically, then resolve Y collisions ---
   box.y += blob3.vy;
   blob3.onGround = false;
+  let standingOn = null;
 
   for (const s of platforms) {
     if (overlap(box, s)) {
@@ -121,12 +123,18 @@ function draw() {
         box.y = s.y - box.h;
         blob3.vy = 0;
         blob3.onGround = true;
+        standingOn = s;
       } else if (blob3.vy < 0) {
         // Rising → hit the underside of a platform
         box.y = s.y + s.h;
         blob3.vy = 0;
       }
     }
+  }
+
+  // Apply slippery behavior AFTER collisions are resolved
+  if (blob3.onGround && standingOn && standingOn.type === "slippery") {
+    blob3.vx *= 0.97;
   }
 
   // --- Convert collision box back to blob centre ---
@@ -153,9 +161,10 @@ function overlap(a, b) {
   );
 }
 
-// Draws the blob using Perlin noise for a soft, breathing effect
+// Draws the blob using Perlin noise for a soft, breathing effect with emotion addition
 function drawBlobCircle(b) {
-  fill(20, 120, 255);
+  let stress = constrain(abs(blob3.vx) + abs(blob3.vy), 0, 10);
+  fill(200 + stress * 5, 80, 80);
   beginShape();
 
   for (let i = 0; i < b.points; i++) {
@@ -182,15 +191,8 @@ function keyPressed() {
     (key === " " || key === "W" || key === "w" || keyCode === UP_ARROW) &&
     blob3.onGround
   ) {
-    blob3.vy = blob3.jumpV;
+    let jumpVariance = random(0.7, 1.0);
+    blob3.vy = blob3.jumpV * jumpVariance;
     blob3.onGround = false;
   }
 }
-
-/* In-class tweaks for experimentation:
-   • Add a new platform:
-     platforms.push({ x: 220, y: floorY3 - 150, w: 80, h: 12 });
-
-   • “Ice” feel → frictionGround = 0.95
-   • “Sand” feel → frictionGround = 0.80
-*/
