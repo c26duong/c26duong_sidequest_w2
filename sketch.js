@@ -56,6 +56,7 @@ function setup() {
     { x: 300, y: floorY3 - 120, w: 90, h: 12 }, // mid step
     { x: 440, y: floorY3 - 180, w: 130, h: 12 }, // high step
     { x: 520, y: floorY3 - 70, w: 90, h: 12 }, // return ramp
+    { x: 220, y: floorY3 - 150, w: 80, h: 12 }, // New Platfrom added
   ];
 
   // Start the blob resting on the floor
